@@ -7,13 +7,16 @@
 # updated by Louis - 2018-09-22
 # github.com/louiseth1/nagios-bitcoin
 #
-# Nagios plugin to check the given Bitcoin node against blockexplorer.com
-# Can be used on BTC or BCH nodes as specified
+# ported by Groestlcoin - 30/10/18
+# github.com/groestlcoin/nagios-groestlcoin
+#
+# Nagios plugin to check the given Groestlcoin node against http://groestlsight.groestlcoin.org
+# Can be used on GRS or TGRS nodes as specified
 #
 # Some inspiration from https://github.com/daniel-lucio/ethereum-nagios-plugins
 
-use_bch=False
-coin="btc" # Default to BTC if not specified
+use_tgrs=False
+coin="grs" # Default to GRS if not specified
 
 while getopts ":B:H:P:w:c:u:p:t:" opt; do
         case $opt in
@@ -57,7 +60,7 @@ if [ -z "$node_address" ]; then
 fi
 
 if [ -z "$node_port" ]; then
-        node_port=8332
+        node_port=1441
 fi
 
 if [ -z "$warn_level" ]; then
@@ -85,32 +88,32 @@ if [ -z "$node_pass" ]; then
         exit 3
 fi
 
-if [ "$coin" != "btc" ] && [ "$coin" != "bch" ]; then
-        echo "UNKNOWN - Invalid coin type specified (btc/bch)"
+if [ "$coin" != "grs" ] && [ "$coin" != "tgrs" ]; then
+        echo "UNKNOWN - Invalid coin type specified (grs/tgrs)"
         exit 3
 fi
 
 case $checktype in
         "blockchain")
                 # Check the wallet for current blockchain height
-                nodeblock=$(curl --user $node_user:$node_pass -sf --data-binary '{"jsonrpc": "1.0", "id":"check_btc_blockchain", "method": "getblockchaininfo", "params":
+                nodeblock=$(curl --user $node_user:$node_pass -sf --data-binary '{"jsonrpc": "1.0", "id":"check_grs_blockchain", "method": "getblockchaininfo", "params":
 [] }' -H 'content-type: text/plain;' http://$node_address:$node_port/)
                 if [ $? -ne "0" ]; then
-                        echo "UNKNOWN - Request to bitcoind failed"
+                        echo "UNKNOWN - Request to groestlcoind failed"
                         exit 3
                 fi
 
                 node_error=$(echo "$nodeblock" | jq -r '.error')
                 if [ "$node_error" != "null" ]; then
-                        echo "UNKNOWN - Request to bitcoind returned error - $node_error"
+                        echo "UNKNOWN - Request to groestlcoind returned error - $node_error"
                         exit 3
                 fi
 
                 node_blocks=$(echo "$nodeblock" | jq -r '.result.blocks')
-                if [ $coin == "bch" ]; then
-                        remote_addr="bitcoincash.blockexplorer.com"
+                if [ $coin == "tgrs" ]; then
+                        remote_addr="http://groestlsight-test.groestlcoin.org"
                 else
-                        remote_addr="blockexplorer.com"
+                        remote_addr="http://groestlsight.groestlcoin.org"
                 fi
 
                 remote=$(curl -sf https://$remote_addr/api/status?q=getBlockchainInfo)
@@ -141,15 +144,15 @@ case $checktype in
 
         "connections")
                 # Check the wallet for peer connections amount
-                nodeconn=$(curl --user $node_user:$node_pass -sf --data-binary '{"jsonrpc": "1.0", "id":"check_btc_blockchain", "method": "getnetworkinfo", "params": [] }' -H 'content-type: text/plain;' http://$node_address:$node_port/)
+                nodeconn=$(curl --user $node_user:$node_pass -sf --data-binary '{"jsonrpc": "1.0", "id":"check_grs_blockchain", "method": "getnetworkinfo", "params": [] }' -H 'content-type: text/plain;' http://$node_address:$node_port/)
                 if [ $? -ne "0" ]; then
-                        echo "UNKNOWN - Request to bitcoind failed"
+                        echo "UNKNOWN - Request to groestlcoind failed"
                         exit 3
                 fi
 
                 node_error=$(echo "$nodeconn" | jq -r '.error')
                 if [ "$node_error" != "null" ]; then
-                        echo "UNKNOWN - Request to bitcoind returned error - $node_error"
+                        echo "UNKNOWN - Request to groestlcoind returned error - $node_error"
                         exit 3
                 fi
 
